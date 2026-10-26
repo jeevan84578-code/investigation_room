@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: mystery-investigation-room
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: GEMINI_MODEL
+        value: gemini-2.0-flash

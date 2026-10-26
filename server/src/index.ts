@@ -1,6 +1,8 @@
 import "dotenv/config";
 import cors from "cors";
 import express from "express";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { generateCase } from "./gemini.js";
 import { calculateScore } from "./scoring.js";
 import { getCase, saveCase, updateCase } from "./store.js";
@@ -48,5 +50,15 @@ app.post("/api/cases/:id/accuse", (req, res) => {
 app.get("/api/cases/:id/result", (req, res) => { const item = getCase(req.params.id); if (!item) return errorMessage(res, 404, "CASE_NOT_FOUND", "The mystery could not be found."); if (item.status !== "completed" || !item.score || !item.accusation) return errorMessage(res, 409, "CASE_NOT_COMPLETED", "Complete an accusation to see the result."); const culprit = item.suspects.find((suspect) => suspect.id === item.culpritId)!; return res.json({ result: { correct: item.accusation.correct, culprit, explanation: item.solutionExplanation, score: item.score, progress: { discoveredClueCount: item.discoveredClueIds.length, hintsUsed: item.usedHintIds.length } } }); });
 
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
+
+const currentFile = fileURLToPath(import.meta.url);
+const serverDirectory = path.dirname(currentFile);
+const clientDistDirectory = path.resolve(serverDirectory, "../../client/dist");
+app.use(express.static(clientDistDirectory));
+app.get("*", (req, res, next) => {
+  if (req.path.startsWith("/api/")) return next();
+  return res.sendFile(path.join(clientDistDirectory, "index.html"));
+});
+
 const port = Number(process.env.PORT ?? 4000);
 app.listen(port, () => console.log(`Casefile API listening on http://localhost:${port}`));
